@@ -1,4 +1,4 @@
-
+import Link from "next/link";
 "use client";
 
 import { useState } from "react";
@@ -72,9 +72,9 @@ export default function HomePage() {
     <main className="min-h-screen bg-[#faf9f6] px-5 py-8 text-[#22211f] sm:px-8">
       <div className="mx-auto flex max-w-5xl flex-col">
         <header className="flex items-center justify-between border-b border-black/10 pb-6">
-          <a href="/" className="text-xl font-bold tracking-tight">
-            Tiny<span className="text-[#b85e42]">.run</span>
-          </a>
+          <Link href="/" className="text-xl font-bold tracking-tight">
+  Tiny<span className="text-[#b85e42]">.run</span>
+</Link>
           <span className="text-sm text-black/55">Simple links. Clear insights.</span>
         </header>
 
