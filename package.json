@@ -1,0 +1,28 @@
+{
+  "name": "tiny.run",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces --if-present",
+    "dev:web": "npm run dev -w @tiny.run/web",
+    "dev:api": "npm run dev -w @tiny.run/api",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "db:generate": "npm run db:generate -w @tiny.run/api",
+    "db:migrate": "npm run db:migrate -w @tiny.run/api"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "eslint": "^9.36.0",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.44.1"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
