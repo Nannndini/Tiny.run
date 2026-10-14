@@ -23,6 +23,7 @@ export function createApp() {
   app.use(cors());
   app.use(express.json());
 
+  // Health check
   app.get("/health", (_req, res) => {
     const body: HealthResponse = {
       status: "ok",
@@ -32,6 +33,7 @@ export function createApp() {
     res.status(200).json(body);
   });
 
+  // Create a short link
   app.post("/links", async (req, res) => {
     const parsed = createLinkSchema.safeParse(req.body);
 
@@ -79,7 +81,52 @@ export function createApp() {
       res.status(500).json({ error: "Unable to create short link." });
     }
   });
-  
+
+  // Get analytics for a short link
+  app.get("/links/:shortCode/analytics", async (req, res) => {
+    try {
+      const link = await prisma.link.findUnique({
+        where: {
+          shortCode: req.params.shortCode,
+        },
+        include: {
+          _count: {
+            select: {
+              clicks: true,
+            },
+          },
+          clicks: {
+            orderBy: {
+              clickedAt: "desc",
+            },
+            take: 10,
+            select: {
+              clickedAt: true,
+              referrer: true,
+              userAgent: true,
+            },
+          },
+        },
+      });
+
+      if (!link) {
+        res.status(404).json({ error: "Short link not found." });
+        return;
+      }
+
+      res.status(200).json({
+        shortCode: link.shortCode,
+        originalUrl: link.originalUrl,
+        totalClicks: link._count.clicks,
+        recentClicks: link.clicks,
+      });
+    } catch (error) {
+      console.error("Failed to fetch link analytics:", error);
+      res.status(500).json({ error: "Unable to fetch link analytics." });
+    }
+  });
+
+  // Redirect to the original URL and record the click
   app.get("/:shortCode", async (req, res) => {
     try {
       const link = await prisma.link.findUnique({
@@ -97,6 +144,14 @@ export function createApp() {
         res.status(410).json({ error: "This short link has expired." });
         return;
       }
+
+      await prisma.clickEvent.create({
+        data: {
+          linkId: link.id,
+          referrer: req.get("referer") ?? null,
+          userAgent: req.get("user-agent") ?? null,
+        },
+      });
 
       res.redirect(302, link.originalUrl);
     } catch (error) {

@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,9 +8,21 @@ datasource db {
 }
 
 model Link {
-  id          String    @id @default(cuid())
-  originalUrl String    @db.Text
-  shortCode   String    @unique @db.VarChar(32)
-  createdAt   DateTime  @default(now())
+  id          String       @id @default(cuid())
+  originalUrl String
+  shortCode   String       @unique @db.VarChar(32)
+  createdAt   DateTime     @default(now())
   expiresAt   DateTime?
+  clicks      ClickEvent[]
+}
+
+model ClickEvent {
+  id        String   @id @default(cuid())
+  linkId    String
+  clickedAt DateTime @default(now())
+  referrer  String?
+  userAgent String?
+  link      Link     @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([linkId, clickedAt])
 }
