@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import type { HealthResponse } from "@tiny.run/shared";
 import { prisma } from "./db.js";
+import { rateLimit } from "./rate-limit.js";
 
 const createLinkSchema = z.object({
   url: z.string().trim().url().max(2048),
@@ -21,6 +22,23 @@ export function createApp() {
 
   app.use(cors());
   app.use(express.json());
+
+  // Redis-backed abuse protection. Keep the limits separate by endpoint.
+  const testRunPrefix =
+    process.env.NODE_ENV === "test"
+      ? `test:${process.env.VITEST_POOL_ID ?? "worker"}`
+      : "";
+
+  const createLinkLimiter = rateLimit({
+    windowMs: 60_000,
+    max: Number(process.env.RATE_LIMIT_CREATE_MAX ?? 10),
+    keyPrefix: `${testRunPrefix ? `${testRunPrefix}:` : ""}tiny:ratelimit:create`,
+  });
+  const redirectLimiter = rateLimit({
+    windowMs: 60_000,
+    max: Number(process.env.RATE_LIMIT_REDIRECT_MAX ?? 60),
+    keyPrefix: `${testRunPrefix ? `${testRunPrefix}:` : ""}tiny:ratelimit:redirect`,
+  });
 
   // Health check
   app.get("/health", (_req, res) => {
@@ -89,7 +107,7 @@ export function createApp() {
   });
 
   // Create a short link
-  app.post("/links", async (req, res) => {
+  app.post("/links", createLinkLimiter, async (req, res) => {
     const parsed = createLinkSchema.safeParse(req.body);
 
     if (!parsed.success) {
@@ -279,7 +297,7 @@ export function createApp() {
   });
 
   // Redirect to the original URL and record the click
-  app.get("/:shortCode", async (req, res) => {
+  app.get("/:shortCode", redirectLimiter, async (req, res) => {
     try {
       const link = await prisma.link.findUnique({
         where: {
