@@ -1,4 +1,3 @@
-
 import request from "supertest";
 import { afterAll, describe, expect, it } from "vitest";
 import { createApp } from "./app.js";
@@ -16,9 +15,7 @@ describe("GET /links", () => {
       alias,
     });
 
-    await request(app)
-      .get(`/${alias}`)
-      .set("User-Agent", "List-Test-Agent");
+    await request(app).get(`/${alias}`).set("User-Agent", "List-Test-Agent");
 
     const response = await request(app).get("/links?page=1&limit=20");
 
@@ -83,9 +80,7 @@ describe("PATCH /links/:shortCode", () => {
       .send({ expiresAt: expiration });
 
     expect(setResponse.status).toBe(200);
-    expect(new Date(setResponse.body.expiresAt).toISOString()).toBe(
-      expiration,
-    );
+    expect(new Date(setResponse.body.expiresAt).toISOString()).toBe(expiration);
 
     const removeResponse = await request(app)
       .patch(`/links/${alias}`)
@@ -93,6 +88,25 @@ describe("PATCH /links/:shortCode", () => {
 
     expect(removeResponse.status).toBe(200);
     expect(removeResponse.body.expiresAt).toBeNull();
+  });
+
+  it("rejects an expiration date in the past", async () => {
+    const alias = `${testPrefix}-past-expiry`;
+
+    const createResponse = await request(app).post("/links").send({
+      url: "https://example.com",
+      alias,
+    });
+
+    expect(createResponse.status).toBe(201);
+
+    const response = await request(app)
+      .patch(`/links/${alias}`)
+      .send({
+        expiresAt: new Date(Date.now() - 60_000).toISOString(),
+      });
+
+    expect(response.status).toBe(400);
   });
 
   it("rejects an empty update", async () => {
@@ -103,9 +117,7 @@ describe("PATCH /links/:shortCode", () => {
       alias,
     });
 
-    const response = await request(app)
-      .patch(`/links/${alias}`)
-      .send({});
+    const response = await request(app).patch(`/links/${alias}`).send({});
 
     expect(response.status).toBe(400);
   });
@@ -205,9 +217,7 @@ describe("POST /links", () => {
     expect(response.status).toBe(201);
     expect(response.body.originalUrl).toBe("https://example.com");
     expect(response.body.shortCode).toBe(alias);
-    expect(response.body.shortUrl).toBe(
-      `http://localhost:4000/${alias}`,
-    );
+    expect(response.body.shortUrl).toBe(`http://localhost:4000/${alias}`);
   });
 
   it("rejects an invalid URL", async () => {
@@ -264,9 +274,7 @@ describe("GET /:shortCode", () => {
   });
 
   it("returns 404 for a missing short link", async () => {
-    const response = await request(app).get(
-      `/${testPrefix}-missing`,
-    );
+    const response = await request(app).get(`/${testPrefix}-missing`);
 
     expect(response.status).toBe(404);
   });
@@ -306,18 +314,14 @@ describe("GET /links/:shortCode/analytics", () => {
       .set("Referer", "https://google.com")
       .set("User-Agent", "Analytics-Test-Agent");
 
-    const response = await request(app).get(
-      `/links/${alias}/analytics`,
-    );
+    const response = await request(app).get(`/links/${alias}/analytics`);
 
     expect(response.status).toBe(200);
     expect(response.body.shortCode).toBe(alias);
     expect(response.body.originalUrl).toBe("https://example.com");
     expect(response.body.totalClicks).toBe(1);
     expect(response.body.recentClicks).toHaveLength(1);
-    expect(response.body.recentClicks[0].referrer).toBe(
-      "https://google.com",
-    );
+    expect(response.body.recentClicks[0].referrer).toBe("https://google.com");
     expect(response.body.recentClicks[0].userAgent).toBe(
       "Analytics-Test-Agent",
     );
