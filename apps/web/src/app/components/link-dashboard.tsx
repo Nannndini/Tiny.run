@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import QRCodeModal from "./qr-code-modal";
 
 const API_URL = "http://localhost:4000";
 
@@ -51,6 +52,7 @@ export default function LinkDashboard() {
   const [saving, setSaving] = useState(false);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [qrLink, setQrLink] = useState<LinkItem | null>(null);
 
   const loadLinks = useCallback(async (requestedPage: number) => {
     setLoading(true);
@@ -363,6 +365,13 @@ export default function LinkDashboard() {
                   </button>
                   <button
                     type="button"
+                    onClick={() => setQrLink(link)}
+                    className="rounded-lg border border-black/15 px-3 py-2 text-sm hover:bg-paper"
+                  >
+                    QR code
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => openEditor(link)}
                     className="rounded-lg border border-black/15 px-3 py-2 text-sm hover:bg-paper"
                   >
@@ -412,6 +421,14 @@ export default function LinkDashboard() {
           </button>
         </div>
       </div>
+
+      {qrLink && (
+        <QRCodeModal
+          shortUrl={qrLink.shortUrl}
+          shortCode={qrLink.shortCode}
+          onClose={() => setQrLink(null)}
+        />
+      )}
 
       {analyticsLoading && (
         <p className="mt-6 rounded-xl border border-black/10 bg-white p-5 text-sm text-black/55">
