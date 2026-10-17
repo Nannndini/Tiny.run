@@ -96,11 +96,19 @@ export default function LinkDashboard() {
   function openEditor(link: LinkItem) {
     setEditing(link);
     setEditUrl(link.originalUrl);
+
     setEditExpiry(
       link.expiresAt
-        ? new Date(link.expiresAt).toISOString().slice(0, 10)
+        ? (() => {
+            const date = new Date(link.expiresAt);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const day = String(date.getDate()).padStart(2, "0");
+            return `${year}-${month}-${day}`;
+          })()
         : "",
     );
+
     setError("");
     setNotice("");
   }
@@ -121,8 +129,9 @@ export default function LinkDashboard() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             url: editUrl.trim(),
+
             expiresAt: editExpiry
-              ? new Date(`${editExpiry}T23:59:59.000Z`).toISOString()
+              ? new Date(`${editExpiry}T23:59:59`).toISOString()
               : null,
           }),
         },
@@ -195,7 +204,9 @@ export default function LinkDashboard() {
 
       setAnalytics(data as Analytics);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to load analytics.");
+      setError(
+        err instanceof Error ? err.message : "Unable to load analytics.",
+      );
     } finally {
       setAnalyticsLoading(false);
     }
@@ -243,13 +254,19 @@ export default function LinkDashboard() {
       </div>
 
       {error && (
-        <p role="alert" className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">
+        <p
+          role="alert"
+          className="mt-5 rounded-xl bg-red-50 p-4 text-sm text-red-700"
+        >
           {error}
         </p>
       )}
 
       {notice && (
-        <p role="status" className="mt-5 rounded-xl bg-green-50 p-4 text-sm text-green-800">
+        <p
+          role="status"
+          className="mt-5 rounded-xl bg-green-50 p-4 text-sm text-green-800"
+        >
           {notice}
         </p>
       )}
@@ -271,7 +288,10 @@ export default function LinkDashboard() {
           </div>
 
           <div>
-            <label htmlFor="edit-url" className="mb-2 block text-sm font-medium">
+            <label
+              htmlFor="edit-url"
+              className="mb-2 block text-sm font-medium"
+            >
               Destination URL
             </label>
             <input
@@ -286,7 +306,10 @@ export default function LinkDashboard() {
           </div>
 
           <div>
-            <label htmlFor="edit-expiry" className="mb-2 block text-sm font-medium">
+            <label
+              htmlFor="edit-expiry"
+              className="mb-2 block text-sm font-medium"
+            >
               Expiration date (optional)
             </label>
             <input

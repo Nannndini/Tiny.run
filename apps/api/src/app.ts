@@ -1,4 +1,3 @@
-
 import cors from "cors";
 import express from "express";
 import { randomBytes } from "node:crypto";
@@ -32,7 +31,6 @@ export function createApp() {
 
     res.status(200).json(body);
   });
-
 
   // List short links with pagination and click counts
   app.get("/links", async (req, res) => {
@@ -142,16 +140,23 @@ export function createApp() {
   // Get analytics for a short link
 
   // Update a short link
+
   const updateLinkSchema = z
     .object({
       url: z.string().trim().url().max(2048).optional(),
-      expiresAt: z
-        .union([z.string().datetime(), z.null()])
-        .optional(),
+      expiresAt: z.union([z.string().datetime(), z.null()]).optional(),
+    })
+    .refine((data) => data.url !== undefined || data.expiresAt !== undefined, {
+      message: "Provide a URL or expiration date to update.",
     })
     .refine(
-      (data) => data.url !== undefined || data.expiresAt !== undefined,
-      { message: "Provide a URL or expiration date to update." },
+      (data) =>
+        data.expiresAt == null ||
+        new Date(data.expiresAt).getTime() > Date.now(),
+      {
+        message: "Expiration date must be in the future.",
+        path: ["expiresAt"],
+      },
     );
 
   // Delete a short link
